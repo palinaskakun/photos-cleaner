@@ -19,10 +19,8 @@ struct CardView: View {
             if let image = uiImage {
                 Image(uiImage: image)
                     .resizable()
-                    // Instead of .scaledToFill(), we use .scaledToFit()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black)  // optional: black letterbox
+                    .scaledToFit()    // <-- Key: preserve aspect ratio
+                    // no .clipped() so we don't cut off landscape photos
             } else {
                 Color.gray
             }
@@ -33,10 +31,9 @@ struct CardView: View {
     }
     
     private func loadAsset() {
+        // The image manager returns something sized ~300x300, but .scaledToFit will keep aspect ratio.
         viewModel.image(for: asset) { image in
-            DispatchQueue.main.async {
-                self.uiImage = image
-            }
+            self.uiImage = image
         }
     }
 }

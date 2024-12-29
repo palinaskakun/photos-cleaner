@@ -11,22 +11,26 @@ import Photos
 struct SwipeDeckView: View {
     @EnvironmentObject var viewModel: PhotoLibraryViewModel
     
-    // Track the drag offset of the top (single) card
     @State private var dragOffset: CGSize = .zero
     
-    // For consistent sizing
     private let cardWidth: CGFloat = 300
     private let cardHeight: CGFloat = 400
     
     var body: some View {
         ZStack {
-            if let topAsset = viewModel.assets.last {
-                CardView(asset: topAsset)
+            // The bottom-most item is at index 0, top-most is the last in the array
+            ForEach(viewModel.assets, id: \.localIdentifier) { asset in
+                let isTop = (asset == viewModel.assets.last)
+                
+                CardView(asset: asset)
                     .frame(width: cardWidth, height: cardHeight)
-                    .offset(x: dragOffset.width, y: dragOffset.height)
-                    .rotationEffect(.degrees(Double(dragOffset.width / 10)))
+                    .offset(x: isTop ? dragOffset.width : 0,
+                            y: isTop ? dragOffset.height : 0)
+                    .rotationEffect(isTop ? .degrees(Double(dragOffset.width / 10)) : .zero)
+                    .zIndex(isTop ? 1 : 0)
                     .gesture(
-                        DragGesture()
+                        // Only top card is draggable
+                        isTop ? DragGesture()
                             .onChanged { value in
                                 dragOffset = value.translation
                             }
@@ -34,12 +38,12 @@ struct SwipeDeckView: View {
                                 let swipeThreshold: CGFloat = 100
                                 if value.translation.width < -swipeThreshold {
                                     // Left swipe => delete
-                                    viewModel.markAssetForDeletion(topAsset)
-                                    handleSwipe(topAsset)
+                                    viewModel.markAssetForDeletion(asset)
+                                    removeTopCard(asset)
                                 } else if value.translation.width > swipeThreshold {
                                     // Right swipe => keep/skip
-                                    viewModel.skipAsset(topAsset)
-                                    handleSwipe(topAsset)
+                                    viewModel.skipAsset(asset)
+                                    removeTopCard(asset)
                                 } else {
                                     // Not enough drag => snap back
                                     withAnimation {
@@ -47,27 +51,22 @@ struct SwipeDeckView: View {
                                     }
                                 }
                             }
+                        : nil
                     )
                     .animation(.spring(), value: dragOffset)
-            } else {
-                // If there's no top asset (assets.isEmpty), you can show a fallback view
-                Text("No more photos/videos!")
-                    .font(.title)
-                    .foregroundColor(.secondary)
             }
         }
     }
     
-    private func handleSwipe(_ asset: PHAsset) {
-        // Remove from our current deck
+    private func removeTopCard(_ asset: PHAsset) {
         viewModel.removeAsset(asset)
         
-        // Reset the drag offset
+        // Reset offset
         withAnimation {
             dragOffset = .zero
         }
         
-        // Refill the deck if there are more assets
+        // Always fill the deck up to 5 items if more remain
         viewModel.fillDeckIfNeeded()
     }
 }

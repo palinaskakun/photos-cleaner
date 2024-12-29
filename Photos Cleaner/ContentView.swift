@@ -13,12 +13,11 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack {
-                // If we have a current asset, show it. Otherwise, "No more photos/videos!"
-                if let asset = viewModel.currentAsset {
-                    SingleAssetView(asset: asset)
-                } else {
+                if viewModel.assets.isEmpty {
                     Text("No more photos/videos!")
                         .font(.title)
+                } else {
+                    SwipeDeckView()
                 }
                 
                 Divider()
@@ -26,7 +25,7 @@ struct ContentView: View {
                 Text("Marked for deletion: \(viewModel.toDeleteAssets.count)")
                     .padding()
                 
-                Button("Delete Marked Items") {
+                Button(action: {
                     viewModel.deleteMarkedAssets { success in
                         if success {
                             print("Deleted successfully")
@@ -34,11 +33,13 @@ struct ContentView: View {
                             print("Deletion error")
                         }
                     }
+                }) {
+                    Text("Delete Marked Items")
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.red)
+                        .cornerRadius(8)
                 }
-                .foregroundColor(.white)
-                .padding()
-                .background(Color.red)
-                .cornerRadius(8)
             }
             .padding()
             .navigationTitle("Photos Cleaner")
