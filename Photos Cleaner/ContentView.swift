@@ -8,17 +8,40 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var viewModel: PhotoLibraryViewModel
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationView {
+            VStack {
+                // If we have a current asset, show it. Otherwise, "No more photos/videos!"
+                if let asset = viewModel.currentAsset {
+                    SingleAssetView(asset: asset)
+                } else {
+                    Text("No more photos/videos!")
+                        .font(.title)
+                }
+                
+                Divider()
+                
+                Text("Marked for deletion: \(viewModel.toDeleteAssets.count)")
+                    .padding()
+                
+                Button("Delete Marked Items") {
+                    viewModel.deleteMarkedAssets { success in
+                        if success {
+                            print("Deleted successfully")
+                        } else {
+                            print("Deletion error")
+                        }
+                    }
+                }
+                .foregroundColor(.white)
+                .padding()
+                .background(Color.red)
+                .cornerRadius(8)
+            }
+            .padding()
+            .navigationTitle("Photos Cleaner")
         }
-        .padding()
     }
-}
-
-#Preview {
-    ContentView()
 }

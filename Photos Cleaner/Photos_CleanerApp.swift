@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import Photos
 
 @main
 struct Photos_CleanerApp: App {
+    @StateObject private var viewModel = PhotoLibraryViewModel()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(viewModel)
         }
     }
 }
