@@ -2,38 +2,76 @@
 //  CardView.swift
 //  Photos Cleaner
 //
-//  Created by Palina Skakun on 12/28/24.
+//  Adds video playback support
 //
 
 import SwiftUI
 import Photos
+import AVKit          // ← NEW
 
 struct CardView: View {
     @EnvironmentObject var viewModel: PhotoLibraryViewModel
     let asset: PHAsset
     
+    // For still-image thumbnails (photos *or* video poster frame)
     @State private var uiImage: UIImage? = nil
+    
+    // For video playback
+    @State private var player: AVPlayer? = nil
     
     var body: some View {
         ZStack {
-            if let image = uiImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()    // <-- Key: preserve aspect ratio
-                    // no .clipped() so we don't cut off landscape photos
+            if asset.mediaType == .video {
+                // Show video when player is ready; fall back to the thumbnail while loading
+                if let player {
+                    VideoPlayer(player: player)
+                        .scaledToFit()
+                        .onAppear { player.play() }            // auto-play only while on-screen
+                        .onDisappear { player.pause() }
+                } else {
+                    thumbnailView
+                }
             } else {
-                Color.gray
+                // Plain photo
+                thumbnailView
             }
         }
-        .onAppear {
-            loadAsset()
+        .onAppear { loadAssetOrPlayer() }
+    }
+    
+    // MARK: - Helpers
+    
+    @ViewBuilder
+    private var thumbnailView: some View {
+        if let image = uiImage {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+        } else {
+            Color.gray
         }
     }
     
-    private func loadAsset() {
-        // The image manager returns something sized ~300x300, but .scaledToFit will keep aspect ratio.
+    private func loadAssetOrPlayer() {
+        if asset.mediaType == .video {
+            // 1) Always fetch a thumbnail first so the card has something to show immediately
+            loadAssetThumbnail()
+            
+            viewModel.playerItem(for: asset) { item in
+                        if let item {
+                            DispatchQueue.main.async {
+                                self.player = AVPlayer(playerItem: item)
+                            }
+                        }
+                    }
+                } else {
+                    loadAssetThumbnail()
+                }
+            }
+    
+    private func loadAssetThumbnail() {
         viewModel.image(for: asset) { image in
-            self.uiImage = image
+            self.uiImage = image    // keeps exactly the same behaviour as before
         }
     }
 }

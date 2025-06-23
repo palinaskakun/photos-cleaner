@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Photos
+import AVKit 
 
 class PhotoLibraryViewModel: ObservableObject {
     @Published var assets: [PHAsset] = []
@@ -149,4 +150,15 @@ class PhotoLibraryViewModel: ObservableObject {
             completion(success)
         }
     }
+    
+    func playerItem(for asset: PHAsset,
+                    completion: @escaping (AVPlayerItem?) -> Void) {
+        let opts = PHVideoRequestOptions()
+        imageManager.requestPlayerItem(forVideo: asset,
+                                       options: opts) { item, _ in
+            completion(item)
+        }
+    }
+
+    
 }
